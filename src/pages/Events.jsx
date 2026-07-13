@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
+import { supabase } from "../supabase";
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -18,17 +11,29 @@ function Events() {
   const [location, setLocation] = useState("");
   const [overlapWarning, setOverlapWarning] = useState(false);
 
-  // Live-listen to the "events" collection — updates instantly for everyone
+  // Load events once, then listen for live changes
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "events"), (snapshot) => {
-      const list = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-      setEvents(list);
-    });
-    return () => unsubscribe();
+    fetchEvents();
+
+    const channel = supabase
+      .channel("events-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => {
+        fetchEvents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  async function fetchEvents() {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("datetime", { ascending: true });
+    if (!error) setEvents(data);
+  }
 
   function checkOverlap(newDatetime) {
     if (!newDatetime) return false;
@@ -46,12 +51,9 @@ function Events() {
 
   async function submitEvent() {
     if (!title || !datetime || !location) return;
-    await addDoc(collection(db, "events"), {
-      title,
-      datetime,
-      location,
-      rsvp: "Select your RSVP",
-    });
+    await supabase.from("events").insert([
+      { title, datetime, location, rsvp: "Select your RSVP" },
+    ]);
     setTitle("");
     setDatetime("");
     setLocation("");
@@ -59,7 +61,7 @@ function Events() {
   }
 
   async function updateRsvp(id, value) {
-    await updateDoc(doc(db, "events", id), { rsvp: value });
+    await supabase.from("events").update({ rsvp: value }).eq("id", id);
   }
 
   function submitSuggestion() {
@@ -76,45 +78,3 @@ function Events() {
 
       <h3 style={{ fontSize: 15, marginBottom: 8 }}>Upcoming Events</h3>
       {events.length === 0 ? (
-        <p className="sub">No events yet — add the first one below.</p>
-      ) : (
-        events.map((e) => (
-          <div key={e.id} className="meetup-card">
-            <p style={{ fontWeight: 700 }}>{e.title}</p>
-            <p>{new Date(e.datetime).toLocaleString()} · {e.location}</p>
-            <select
-              name={`rsvp-${e.id}`}
-              value={e.rsvp}
-              onChange={(ev) => updateRsvp(e.id, ev.target.value)}
-              style={{ marginTop: 8, padding: 6, borderRadius: 6 }}
-            >
-              <option>Select your RSVP</option>
-              <option>Going</option>
-              <option>Not Going</option>
-              <option>Maybe</option>
-            </select>
-          </div>
-        ))
-      )}
-
-      <h3 style={{ fontSize: 15, margin: "20px 0 8px" }}>Add an Event</h3>
-      <input className="chip" name="eventTitle" placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input className="chip" name="eventDatetime" type="datetime-local" value={datetime} onChange={(e) => handleDatetimeChange(e.target.value)} />
-      <input className="chip" name="eventLocation" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
-
-      {overlapWarning && (
-        <p style={{ color: "#C4622D", fontSize: 13, marginBottom: 10 }}>
-          ⚠️ Heads up — this overlaps with an existing event.
-        </p>
-      )}
-
-      <button className="primary-btn" onClick={submitEvent}>Post event</button>
-
-      <h3 style={{ fontSize: 15, margin: "20px 0 8px" }}>Suggestion Box</h3>
-      <input className="chip" name="suggestion" placeholder="Got feedback on the app?" value={suggestion} onChange={(e) => setSuggestion(e.target.value)} />
-      <button className="primary-btn" onClick={submitSuggestion}>Send feedback</button>
-    </div>
-  );
-}
-
-export default Events;
