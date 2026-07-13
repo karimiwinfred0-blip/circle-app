@@ -10,6 +10,9 @@ const MEMBERS = [
 ];
 
 function GroupDashboard() {
+  const storedInterests = JSON.parse(localStorage.getItem("circleInterests") || "[]");
+  const groupInterests = storedInterests.length > 0 ? storedInterests : ["Outdoors", "Wellness"];
+
   const [members, setMembers] = useState(MEMBERS);
   const [meetupDone, setMeetupDone] = useState(false);
   const [ritualStatus, setRitualStatus] = useState("undecided");
@@ -17,7 +20,7 @@ function GroupDashboard() {
   const [groupName, setGroupName] = useState("Sunrise Collective");
   const [editingName, setEditingName] = useState(false);
 
-  const [availableEvents, setAvailableEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [pickingEvent, setPickingEvent] = useState(false);
 
@@ -30,15 +33,17 @@ function GroupDashboard() {
       .from("events")
       .select("*")
       .order("datetime", { ascending: true });
-    if (!error) setAvailableEvents(data);
+    if (!error) setAllEvents(data);
   }
+
+  const relevantEvents = allEvents.filter((e) => groupInterests.includes(e.category));
 
   function updateMyRsvp(value) {
     setMembers(members.map((m) => (m.name === "You" ? { ...m, rsvp: value } : m)));
   }
 
   const confirmedCount = members.filter((m) => m.rsvp === "Going").length;
-  const proposedMeetup = availableEvents.find((e) => e.id === selectedEventId);
+  const proposedMeetup = allEvents.find((e) => e.id === selectedEventId);
 
   return (
     <div className="phone">
@@ -59,7 +64,7 @@ function GroupDashboard() {
         </h1>
       )}
 
-      <p className="sub">Say hi, show up, and keep the momentum going.</p>
+      <p className="sub">Matched on: {groupInterests.join(", ")}</p>
 
       <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: 15 }}>Your People</h3>
       {members.map((m) => (
@@ -96,15 +101,15 @@ function GroupDashboard() {
           </button>
         </div>
       ) : (
-        <p className="sub">No meetup picked yet. Choose one from upcoming events below.</p>
+        <p className="sub">No meetup picked yet. Choose one below, matched to your interests.</p>
       )}
 
       {(pickingEvent || !proposedMeetup) && (
         <>
-          {availableEvents.length === 0 ? (
-            <p className="sub">No events posted yet — add one on the Events tab first.</p>
+          {relevantEvents.length === 0 ? (
+            <p className="sub">No events match {groupInterests.join(" or ")} yet. Add one on the Events tab.</p>
           ) : (
-            availableEvents.map((e) => (
+            relevantEvents.map((e) => (
               <button
                 key={e.id}
                 className={`chip ${selectedEventId === e.id ? "active" : ""}`}
@@ -113,7 +118,7 @@ function GroupDashboard() {
                   setPickingEvent(false);
                 }}
               >
-                {e.title} — {new Date(e.datetime).toLocaleDateString()} · {e.location}
+                {e.title} ({e.category}) — {new Date(e.datetime).toLocaleDateString()}
               </button>
             ))
           )}
@@ -152,7 +157,7 @@ function GroupDashboard() {
       )}
 
       {ritualStatus === "skipped" && (
-        <p className="sub">No standing ritual yet — you can set one up anytime from here.</p>
+        <p className="sub">No standing ritual yet, you can set one up anytime from here.</p>
       )}
 
       <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, fontSize: 13 }}>

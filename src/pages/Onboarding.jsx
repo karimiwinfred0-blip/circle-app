@@ -15,6 +15,11 @@ function Onboarding() {
     }
   }
 
+  function handleContinue() {
+    localStorage.setItem("circleInterests", JSON.stringify(selected));
+    navigate("/group");
+  }
+
   return (
     <div className="phone">
       <p className="eyebrow">circle · nairobi</p>
@@ -34,7 +39,7 @@ function Onboarding() {
       <button
         className="primary-btn"
         disabled={selected.length < 2}
-        onClick={() => navigate("/group")}
+        onClick={handleContinue}
       >
         Find my circle
       </button>
