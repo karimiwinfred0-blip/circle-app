@@ -1,13 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../supabase";
 
 const INTERESTS = ["Outdoors", "Books", "Tech", "Games", "Making", "Wellness"];
 
 function Profile() {
-  const [name, setName] = useState(localStorage.getItem("circleName") || "You");
-  const [interests, setInterests] = useState(["Outdoors", "Wellness"]);
+  const [name, setName] = useState("");
+  const [interests, setInterests] = useState([]);
   const [notifications, setNotifications] = useState(true);
   const [saved, setSaved] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    const userId = localStorage.getItem("circleUserId");
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
+    if (!error && data) {
+      setName(data.name || "");
+      setInterests(data.interests ? data.interests.split(",").filter(Boolean) : []);
+      setPhoto(data.photo_url || null);
+    }
+    setLoading(false);
+  }
 
   function toggleInterest(interest) {
     if (interests.includes(interest)) {
@@ -26,10 +47,26 @@ function Profile() {
     }
   }
 
-  function saveProfile() {
+  async function saveProfile() {
+    const userId = localStorage.getItem("circleUserId");
+    if (userId) {
+      await supabase
+        .from("users")
+        .update({ name, interests: interests.join(","), photo_url: photo || "" })
+        .eq("id", userId);
+    }
     localStorage.setItem("circleName", name);
+    localStorage.setItem("circleInterests", JSON.stringify(interests));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  if (loading) {
+    return (
+      <div className="phone">
+        <p className="sub">Loading your profile...</p>
+      </div>
+    );
   }
 
   return (
@@ -43,7 +80,7 @@ function Profile() {
             <img src={photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div className="avatar" style={{ background: "#8C4A2E", opacity: 1, width: 64, height: 64, fontSize: 20 }}>
-              {name.charAt(0).toUpperCase()}
+              {name ? name.charAt(0).toUpperCase() : "?"}
             </div>
           )}
           <input type="file" accept="image/*" name="profilePhoto" onChange={handlePhotoUpload} style={{ display: "none" }} />

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabase";
 
 const INTERESTS = ["Outdoors", "Books", "Tech", "Games", "Making", "Wellness"];
 
 function Onboarding() {
   const [selected, setSelected] = useState([]);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
   function toggleInterest(interest) {
@@ -15,8 +17,17 @@ function Onboarding() {
     }
   }
 
-  function handleContinue() {
+  async function handleContinue() {
+    setSaving(true);
+    const userId = localStorage.getItem("circleUserId");
+    const interestsString = selected.join(",");
+
+    if (userId) {
+      await supabase.from("users").update({ interests: interestsString }).eq("id", userId);
+    }
+
     localStorage.setItem("circleInterests", JSON.stringify(selected));
+    setSaving(false);
     navigate("/group");
   }
 
@@ -38,10 +49,10 @@ function Onboarding() {
 
       <button
         className="primary-btn"
-        disabled={selected.length < 2}
+        disabled={selected.length < 2 || saving}
         onClick={handleContinue}
       >
-        Find my circle
+        {saving ? "Saving..." : "Find my circle"}
       </button>
     </div>
   );
