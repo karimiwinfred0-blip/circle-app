@@ -5,6 +5,7 @@ import SignUp from "./pages/SignUp";
 import Onboarding from "./pages/Onboarding";
 import GroupDashboard from "./pages/GroupDashboard";
 import Events from "./pages/Events";
+import AllEvents from "./pages/AllEvents";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import GroupsManagement from "./pages/GroupsManagement";
@@ -29,6 +30,7 @@ function App() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/all-events" element={<AllEvents />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin isAdmin={isAdmin} />} />
         <Route path="/groups" element={<GroupsManagement isAdmin={isAdmin} />} />

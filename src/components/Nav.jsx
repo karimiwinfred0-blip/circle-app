@@ -5,6 +5,7 @@ const links = [
   { to: "/onboarding", label: "🧭 Interests" },
   { to: "/group", label: "👥 Group" },
   { to: "/events", label: "📅 Events" },
+  { to: "/all-events", label: "🗂️ All Events" },
   { to: "/profile", label: "👤 Profile" },
   { to: "/admin", label: "🛠️ Admin" },
   { to: "/groups", label: "📋 Manage Groups" },
