@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const APPROVED_SEED = [
-  { id: 1, title: "Karura Forest Run", datetime: "2026-07-11T07:00", status: "Approved" },
+  { id: 1, title: "Karura Forest Run", datetime: "2026-07-11T07:00", location: "Karura Forest", rsvp: "Select your RSVP" },
 ];
 
 function Events() {
@@ -32,12 +32,16 @@ function Events() {
     if (!title || !datetime || !location) return;
     setEvents([
       ...events,
-      { id: Date.now(), title, datetime, location, status: "Approved" },
+      { id: Date.now(), title, datetime, location, rsvp: "Select your RSVP" },
     ]);
     setTitle("");
     setDatetime("");
     setLocation("");
     setOverlapWarning(false);
+  }
+
+  function updateRsvp(id, value) {
+    setEvents(events.map((e) => (e.id === id ? { ...e, rsvp: value } : e)));
   }
 
   function submitSuggestion() {
@@ -50,6 +54,7 @@ function Events() {
     <div className="phone">
       <p className="eyebrow">community events</p>
       <h1>Events</h1>
+      <p className="sub">Anyone can post an event — and anyone can RSVP.</p>
 
       <h3 style={{ fontSize: 15, marginBottom: 8 }}>Upcoming Events</h3>
       {events.length === 0 ? (
@@ -57,8 +62,19 @@ function Events() {
       ) : (
         events.map((e) => (
           <div key={e.id} className="meetup-card">
-            <p>{e.title}</p>
+            <p style={{ fontWeight: 700 }}>{e.title}</p>
             <p>{new Date(e.datetime).toLocaleString()} · {e.location}</p>
+            <select
+              name={`rsvp-${e.id}`}
+              value={e.rsvp}
+              onChange={(ev) => updateRsvp(e.id, ev.target.value)}
+              style={{ marginTop: 8, padding: 6, borderRadius: 6 }}
+            >
+              <option>Select your RSVP</option>
+              <option>Going</option>
+              <option>Not Going</option>
+              <option>Maybe</option>
+            </select>
           </div>
         ))
       )}

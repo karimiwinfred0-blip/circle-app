@@ -11,7 +11,7 @@ const MEMBERS = [
 function GroupDashboard() {
   const [members, setMembers] = useState(MEMBERS);
   const [meetupDone, setMeetupDone] = useState(false);
-  const [ritualConfirmed, setRitualConfirmed] = useState(false);
+  const [ritualStatus, setRitualStatus] = useState("undecided");
   const [remindersOn, setRemindersOn] = useState(true);
   const [groupName, setGroupName] = useState("Sunrise Collective");
   const [editingName, setEditingName] = useState(false);
@@ -78,20 +78,37 @@ function GroupDashboard() {
         </button>
       )}
 
-      {meetupDone && !ritualConfirmed && (
+      {meetupDone && ritualStatus === "undecided" && (
         <div className="meetup-card" style={{ background: "#D9A441", color: "#2A2521" }}>
-          <p>Make this a weekly ritual?</p>
+          <p>Make this a weekly ritual? (optional)</p>
           <p style={{ marginBottom: 10 }}>{confirmedCount} of {members.length} confirmed</p>
-          <button className="primary-btn" onClick={() => setRitualConfirmed(true)}>
-            Confirm weekly ritual
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="primary-btn"
+              style={{ margin: 0, flex: 1 }}
+              onClick={() => setRitualStatus("confirmed")}
+            >
+              Yes, make it weekly
+            </button>
+            <button
+              className="primary-btn"
+              style={{ margin: 0, flex: 1, background: "transparent", border: "1.5px solid #2A2521", color: "#2A2521", boxShadow: "none" }}
+              onClick={() => setRitualStatus("skipped")}
+            >
+              Not now
+            </button>
+          </div>
         </div>
       )}
 
-      {ritualConfirmed && (
+      {ritualStatus === "confirmed" && (
         <div className="meetup-card">
           <p>✅ Status: Recurring — every Saturday, 7:00 AM</p>
         </div>
+      )}
+
+      {ritualStatus === "skipped" && (
+        <p className="sub">No standing ritual yet — you can set one up anytime from here.</p>
       )}
 
       <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, fontSize: 13 }}>
