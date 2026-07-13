@@ -1,11 +1,15 @@
-import { useState } from "react";
-
-const APPROVED_SEED = [
-  { id: 1, title: "Karura Forest Run", datetime: "2026-07-11T07:00", location: "Karura Forest", rsvp: "Select your RSVP" },
-];
+import { useState, useEffect } from "react";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 
 function Events() {
-  const [events, setEvents] = useState(APPROVED_SEED);
+  const [events, setEvents] = useState([]);
   const [suggestion, setSuggestion] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
@@ -13,6 +17,18 @@ function Events() {
   const [datetime, setDatetime] = useState("");
   const [location, setLocation] = useState("");
   const [overlapWarning, setOverlapWarning] = useState(false);
+
+  // Live-listen to the "events" collection — updates instantly for everyone
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "events"), (snapshot) => {
+      const list = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setEvents(list);
+    });
+    return () => unsubscribe();
+  }, []);
 
   function checkOverlap(newDatetime) {
     if (!newDatetime) return false;
@@ -28,20 +44,22 @@ function Events() {
     setOverlapWarning(checkOverlap(value));
   }
 
-  function submitEvent() {
+  async function submitEvent() {
     if (!title || !datetime || !location) return;
-    setEvents([
-      ...events,
-      { id: Date.now(), title, datetime, location, rsvp: "Select your RSVP" },
-    ]);
+    await addDoc(collection(db, "events"), {
+      title,
+      datetime,
+      location,
+      rsvp: "Select your RSVP",
+    });
     setTitle("");
     setDatetime("");
     setLocation("");
     setOverlapWarning(false);
   }
 
-  function updateRsvp(id, value) {
-    setEvents(events.map((e) => (e.id === id ? { ...e, rsvp: value } : e)));
+  async function updateRsvp(id, value) {
+    await updateDoc(doc(db, "events", id), { rsvp: value });
   }
 
   function submitSuggestion() {
